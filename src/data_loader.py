@@ -22,6 +22,7 @@ equal to the number of time steps to allow for interactive visualization.
 def preprocess(data, tracked_metadata, step_size):
     traversal_time_steps = []
     for i in range(step_size, len(data), step_size):
+        # TODO: This disregards some last events due to step size issues (should be easy fix)
         edge_list, metadata = extract_relevant_data(data[:i], tracked_metadata)
         traversal_time_steps.append({"edge_list": edge_list, "metadata": metadata})
     return traversal_time_steps
@@ -70,18 +71,23 @@ def extract_relevant_data(data, tracked_metadata):
 
     # Get metadata per node from discover information
     discover_metadata = {}
-    for (url, metadata) in discover_metadata_raw.items():
-        discover_link_metadata = {"discoverPosition": url_to_index[url]}
-        for (key, value) in metadata.items():
-            if key in tracked_metadata:
-                discover_link_metadata[key] = value
+    for (url, metadata_list) in discover_metadata_raw.items():
+        discover_link_metadata = {}
+        for key in tracked_metadata:
+            discover_link_metadata[key] = []
+
+        for metadata in metadata_list:
+            for (key, value) in metadata.items():
+                if key in tracked_metadata:
+                    discover_link_metadata[key].append(value)
+
         discover_metadata[url] = discover_link_metadata
 
     # Get metadata per node from dereference information
     deref_number = 1
     dereference_metadata = {}
     for link in dereference_order:
-        deref_link_metadata = {"dereferencePosition": deref_number}
+        deref_link_metadata = {}
         for (key, value) in link['metadata'].items():
             if key in tracked_metadata:
                 deref_link_metadata[key] = value
@@ -106,11 +112,12 @@ def extract_relevant_data(data, tracked_metadata):
         else:
             ordered_metadata_by_node_index.append({})
         ordered_metadata_by_node_index[-1]['url'] = url
-    relative_timestamps(['discoveredTimestamp', 'dereferencedTimestamp'], ordered_metadata_by_node_index)
+    # relative_timestamps(['discoveredTimestamp', 'dereferencedTimestamp'], ordered_metadata_by_node_index)
     return edge_list_index, ordered_metadata_by_node_index
 
 
 def relative_timestamps(timestamp_names, metadata_list):
+    # Get minimal timestamp
     min_timestamp = math.inf
     for metadata in metadata_list:
         for timestamp_name in timestamp_names:
@@ -126,5 +133,6 @@ def relative_timestamps(timestamp_names, metadata_list):
 
 def load_data_main(location, tracked_metadata):
     traversal_data = load_file(location)
-    graph_data = preprocess(traversal_data, tracked_metadata, 5)
+
+    graph_data = preprocess(traversal_data, tracked_metadata, 20)
     return graph_data

@@ -186,3 +186,6 @@ fabric.properties
 
 # To ensure my test data doesn't end up in repo, will be removed once a bit more polished (and CLI)
 /temp-data/traversal-log-file.json
+/temp-data/*
+
+/output-topologies/*
